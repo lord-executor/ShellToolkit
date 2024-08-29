@@ -1,4 +1,4 @@
-[![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/lord-executor/Larcanum.ShellToolkit/blob/master/LICENSE)
+[![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/lord-executor/Larcanum.ShellToolkit/blob/master/LICENSE) [![Nuget](https://img.shields.io/nuget/v/Larcanum.ShellToolkit.svg)](https://www.nuget.org/packages/Larcanum.ShellToolkit/)
 
 # Overview
 
@@ -32,7 +32,7 @@ var tempFile = new FileInfo(Path.GetTempFileName());
 var pipeline = Command.Create("dotnet", ["list", @"C:\path\to\ShellToolkit.csproj", "package", "--format", "json"])
     .Pipe(Command.Create("jq", [".projects.[].frameworks.[].topLevelPackages.[].id"]))
     .Pipe(tempFile);
-
+ 
 if (await runner.ExecAsync(pipeline) != 0)
 {
     throw new Exception("Pipeline failed");
