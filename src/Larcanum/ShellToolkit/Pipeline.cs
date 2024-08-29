@@ -9,7 +9,7 @@ public class Pipeline : IPipeline
         _steps.Add(new CommandPipelineStep(cmd));
     }
 
-    public Pipeline Pipe(ICommand cmd)
+    public IPipeline Pipe(ICommand cmd)
     {
         _steps.Add(new CommandPipelineStep(cmd));
         return this;

@@ -8,4 +8,7 @@ public interface IPipeline
     }
 
     Task<CommandResult> Run(PipelineOutput initial, OutputMode mode, CancellationToken ct = default);
+
+    IPipeline Pipe(ICommand cmd);
+    IPipeline Pipe(FileInfo file);
 }
