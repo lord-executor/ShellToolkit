@@ -1,11 +1,27 @@
 using System.Diagnostics;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Larcanum.ShellToolkit;
 
 public class CommandRunner : ICommandRunner
 {
+    public static CommandRunner Create()
+    {
+        return new CommandRunner(new Settings(), new NullLogger<CommandRunner>());
+    }
+
+    public static CommandRunner Create(Settings settings)
+    {
+        return new CommandRunner(settings, new NullLogger<CommandRunner>());
+    }
+
+    public static CommandRunner Create(ILogger<CommandRunner> logger)
+    {
+        return new CommandRunner(new Settings(), logger);
+    }
+
     private readonly Settings _settings;
     private readonly ILogger _logger;
 
