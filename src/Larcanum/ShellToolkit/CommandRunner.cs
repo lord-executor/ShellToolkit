@@ -26,6 +26,11 @@ public class CommandRunner : ICommandRunner
     private readonly ILogger _logger;
 
     public CommandRunner(Settings settings, ILogger<CommandRunner> logger)
+        : this(settings, (ILogger)logger)
+    {
+    }
+
+    public CommandRunner(Settings settings, ILogger logger)
     {
         _settings = settings;
         _logger = logger;
