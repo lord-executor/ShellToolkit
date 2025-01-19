@@ -58,6 +58,16 @@ public class BoundCommand : IBoundCommand
         Process.Start(info);
     }
 
+    public IBoundCommand ThrowOnError()
+    {
+        return new BoundErrorHandler(_context, this);
+    }
+
+    public override string ToString()
+    {
+        return _command.ToString()!;
+    }
+
     private async Task<Process> RunRedirected(ICommand cmd, Action<string> output, Action<string> error, CancellationToken ct)
     {
         var info = cmd.ToProcessStartInfo();

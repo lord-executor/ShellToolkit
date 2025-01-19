@@ -30,4 +30,14 @@ public class BoundPipeline : IBoundCommand
         _context.Logger.LogDebug("[exec-dt]: {pipeline}", _pipeline);
         _pipeline.Run(OutputMode.Default, CancellationToken.None);
     }
+
+    public IBoundCommand ThrowOnError()
+    {
+        return new BoundErrorHandler(_context, this);
+    }
+
+    public override string ToString()
+    {
+        return _pipeline.ToString()!;
+    }
 }
