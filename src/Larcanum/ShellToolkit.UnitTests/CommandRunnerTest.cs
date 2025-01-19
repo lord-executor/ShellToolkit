@@ -60,6 +60,7 @@ public class CommandRunnerTest
         var runner = CreateRunner();
         var result = await runner.CaptureAsync(SampleCommands.Version());
         result.ExitCode.Should().Be(0);
+        result.IsSuccess.Should().BeTrue();
         result.Output.Should().MatchRegex(VersionRegex);
         result.Error.Should().Be("");
     }
@@ -70,6 +71,7 @@ public class CommandRunnerTest
         var runner = CreateRunner();
         var result = await runner.CaptureAsync(SampleCommands.Fail());
         result.ExitCode.Should().Be(1);
+        result.IsSuccess.Should().BeFalse();
         result.Output.Should().Contain("Possible reasons for this include");
         result.Error.Should().Contain("Could not execute because the specified command or file was not found");
     }
