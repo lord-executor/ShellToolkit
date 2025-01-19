@@ -1,11 +1,9 @@
-using System.Diagnostics;
-
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Larcanum.ShellToolkit;
 
-public class CommandRunner : ICommandRunner
+public class CommandRunner : ICommandRunner, IExecutionContext
 {
     public static CommandRunner Create()
     {
@@ -25,6 +23,9 @@ public class CommandRunner : ICommandRunner
     private readonly Settings _settings;
     private readonly ILogger _logger;
 
+    Settings IExecutionContext.Settings => _settings;
+    ILogger IExecutionContext.Logger => _logger;
+
     public CommandRunner(Settings settings, ILogger<CommandRunner> logger)
         : this(settings, (ILogger)logger)
     {
@@ -36,93 +37,43 @@ public class CommandRunner : ICommandRunner
         _logger = logger;
     }
 
+    public IBoundCommand Bind(ICommand command)
+    {
+        return new BoundCommand(this, command);
+    }
+
+    public IBoundCommand Bind(IPipeline pipeline)
+    {
+        return new BoundPipeline(this, pipeline);
+    }
+
     public Task<int> ExecAsync(ICommand cmd, CancellationToken ct = default)
     {
-        _logger.LogInformation("[exec]: {cmd}", cmd);
-
-        var info = cmd.ToProcessStartInfo();
-        info.UseShellExecute = false;
-        // This is important for "forwarding" access to the console to the child process and even though
-        // false is the default value, we want to make this very explicit here. This allows tools with fancy console
-        // UI like menus and progress bars to work when created as child processes.
-        info.CreateNoWindow = false;
-
-        using var process = Process.Start(info);
-        process?.WaitForExit();
-
-        return Task.FromResult(process?.ExitCode ?? _settings.NoProcessSpawnedExitCode);
+        return Bind(cmd).ExecAsync(ct);
     }
 
-    public async Task<int> ExecAsync(IPipeline pipeline, CancellationToken ct = default)
+    public Task<int> ExecAsync(IPipeline pipeline, CancellationToken ct = default)
     {
-        _logger.LogInformation("[exec]: {pipeline}", pipeline);
-        return (await pipeline.Run(OutputMode.Default, ct)).ExitCode;
+        return Bind(pipeline).ExecAsync(ct);
     }
 
-    public async Task<CommandResult> CaptureAsync(ICommand cmd, CancellationToken ct = default)
+    public Task<CommandResult> CaptureAsync(ICommand cmd, CancellationToken ct = default)
     {
-        _logger.LogDebug("[exec-bg]: {cmd}", cmd);
-
-        var output = new StringWriter();
-        var error = new StringWriter();
-        using var p = await RunRedirected(cmd, msg => output.WriteLine(msg), msg => error.WriteLine(msg), ct);
-
-        return new CommandResult
-        {
-            ExitCode = p.ExitCode,
-            Output = output.ToString(),
-            Error = error.ToString(),
-        };
+        return Bind(cmd).CaptureAsync(ct);
     }
 
-    public async Task<CommandResult> CaptureAsync(IPipeline pipeline, CancellationToken ct = default)
+    public Task<CommandResult> CaptureAsync(IPipeline pipeline, CancellationToken ct = default)
     {
-        _logger.LogDebug("[exec-bg]: {pipeline}", pipeline);
-        return await pipeline.Run(OutputMode.Capture, ct);
+        return Bind(pipeline).CaptureAsync(ct);
     }
 
     public void ExecDetached(ICommand cmd)
     {
-        _logger.LogDebug("[exec-dt]: {cmd}", cmd);
-
-        var info = cmd.ToProcessStartInfo();
-        info.UseShellExecute = false;
-
-        Process.Start(info);
+        Bind(cmd).ExecDetached();
     }
 
-    private async Task<Process> RunRedirected(ICommand cmd, Action<string> output, Action<string> error, CancellationToken ct)
+    public void ExecDetached(IPipeline pipeline)
     {
-        var info = cmd.ToProcessStartInfo();
-        info.UseShellExecute = false;
-        info.CreateNoWindow = true;
-        info.RedirectStandardInput = true;
-        info.RedirectStandardOutput = true;
-        info.RedirectStandardError = true;
-
-        var p = new Process() { StartInfo = info };
-        p.OutputDataReceived += (_, eventArgs) =>
-        {
-            if (eventArgs.Data != null)
-            {
-                output(eventArgs.Data!);
-            }
-        };
-        p.ErrorDataReceived += (_, eventArgs) =>
-        {
-            if (eventArgs.Data != null)
-            {
-                error(eventArgs.Data!);
-            }
-        };
-
-        p.Start();
-
-        p.BeginErrorReadLine();
-        p.BeginOutputReadLine();
-
-        await p.WaitForExitAsync(ct);
-
-        return p;
+        Bind(pipeline).ExecDetached();
     }
 }
